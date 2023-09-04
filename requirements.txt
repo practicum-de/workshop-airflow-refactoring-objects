@@ -1,0 +1,4 @@
+# pip install -r requirements.txt
+
+apache-airflow==2.7.0
+pandas
