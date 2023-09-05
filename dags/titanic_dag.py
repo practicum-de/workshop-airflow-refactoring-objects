@@ -1,23 +1,25 @@
 import datetime as dt
+import logging
+
 import pandas as pd
-
-from airflow.models import DAG
-from airflow.operators.python import PythonOperator
-from airflow.operators.bash import BashOperator
 from airflow.hooks.base import BaseHook
-
+from airflow.models import DAG
+from airflow.operators.bash import BashOperator
+from airflow.operators.python import PythonOperator
+from airflow.providers.postgres.operators.postgres import PostgresOperator
 from sqlalchemy import create_engine
 
 args = {
     "owner": "airflow",
-    "start_date": dt.datetime(2020, 12, 23),
+    "start_date": dt.datetime(2023, 9, 1),
     "retries": 1,
     "retry_delay": dt.timedelta(minutes=1),
-    "pause": False,
 }
 
 
 def download_titanic_dataset():
+    logging.info("Downloading titanic dataset")
+
     url = "https://web.stanford.edu/class/archive/cs/cs109/cs109.1166/stuff/titanic.csv"
     conn = BaseHook.get_connection("POSTGRES_DB")
     engine = create_engine(conn.get_uri())
@@ -25,18 +27,16 @@ def download_titanic_dataset():
     df = pd.read_csv(url)
     df.to_sql("titanic", engine, index=False, if_exists="replace", schema="public")
 
-
-def pivot_dataset():
-    engine = create_engine("postgresql+psycopg2://airflow:airflow@host.docker.internal:5432/de")
-
-    titanic_df = pd.read_sql("select * from public.titanic", con=engine)
-    df = titanic_df.pivot_table(index=["Sex"], columns=["Pclass"], values="Name", aggfunc="count").reset_index()
-    df.to_sql("titanic_pivot", engine, index=False, if_exists="replace", schema="public")
+    logging.info("Downloaded titanic dataset")
 
 
 dag = DAG(
-    dag_id="titanic_pivot",
-    schedule_interval=None,
+    dag_id="titanic_dag",
+    schedule_interval="0/15 * * * *",
+    start_date=dt.datetime(2023, 9, 1),
+    catchup=False,
+    tags=["demo", "stg", "cdm", "titanic"],
+    is_paused_upon_creation=False,
     default_args=args,
 )
 
@@ -53,11 +53,20 @@ create_titanic_dataset = PythonOperator(
     dag=dag,
 )
 
-pivot_titanic_dataset = PythonOperator(
-    task_id="pivot_dataset",
-    python_callable=pivot_dataset,
-    dag=dag,
+titanic_sex_dm = PostgresOperator(
+    task_id="create_titanic_sex_dm",
+    postgres_conn_id="PG_CONN",
+    sql="""
+            CREATE TABLE public.titanic_sex_dm AS
+            SELECT
+                t."Sex"                     AS "sex",
+                count(DISTINCT t."Name")    AS name_uq,
+                avg("Age")                  AS age_avg,
+                sum("Fare")                 AS fare_sum
+            FROM public.titanic t
+            GROUP BY t."Sex"
+          """,
 )
 
 
-start >> create_titanic_dataset >> pivot_titanic_dataset
+start >> create_titanic_dataset >> titanic_sex_dm
