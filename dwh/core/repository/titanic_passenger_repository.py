@@ -3,12 +3,41 @@ from dwh.core.entities.passenger import Passenger
 from dwh.utils.postgres import PgConnect
 
 
-class TitanicPassengerRepository(ITitanicPassengerRepository):
+class TitanicPassengerPsycopgRepository(ITitanicPassengerRepository):
     def __init__(self, db_connection: PgConnect):
-        self.db_connection = db_connection
+        self._db_connection = db_connection
 
     def save(self, passenger: Passenger):
-        return super().save(passenger)
+        with self._db_connection.connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO stg.passengers (
+                        age,
+                        fare,
+                        name,
+                        p_class,
+                        parents_children_aboard,
+                        gender,
+                        siblings_spouses_aboard,
+                        survived
+                    )
+                    VALUES (
+                        %(age)s,
+                        %(fare)s,
+                        %(name)s,
+                        %(p_class)s,
+                        %(parents_children_aboard)s,
+                        %(gender)s,
+                        %(siblings_spouses_aboard)s,
+                        %(survived)s
+                    )
+                    ON CONFLICT (name) DO NOTHING;
+
+                """,
+                    passenger.dict(),
+                )
 
     def save_many(self, passengers: list[Passenger]):
-        return super().save_many(passengers)
+        for passenger in passengers:
+            self.save(passenger)

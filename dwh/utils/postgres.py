@@ -2,7 +2,6 @@ from contextlib import contextmanager
 from typing import Generator
 
 import psycopg
-from airflow.hooks.base import BaseHook
 
 
 class PgConnect:
@@ -27,9 +26,6 @@ class PgConnect:
             host=self.host, port=self.port, db_name=self.db_name, user=self.user, pw=self.pw, sslmode=self.sslmode
         )
 
-    def client(self):
-        return psycopg.connect(self.url())
-
     @contextmanager
     def connection(self) -> Generator[psycopg.Connection, None, None]:
         conn = psycopg.connect(self.url())
@@ -41,17 +37,3 @@ class PgConnect:
             raise e
         finally:
             conn.close()
-
-
-class ConnectionBuilder:
-    @staticmethod
-    def pg_conn(conn_id: str) -> PgConnect:
-        conn = BaseHook.get_connection(conn_id)
-
-        sslmode = "require"
-        if "sslmode" in conn.extra_dejson:
-            sslmode = conn.extra_dejson["sslmode"]
-
-        pg = PgConnect(str(conn.host), str(conn.port), str(conn.schema), str(conn.login), str(conn.password), sslmode)
-
-        return pg

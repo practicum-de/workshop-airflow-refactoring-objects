@@ -1,13 +1,15 @@
 import datetime as dt
 import logging
 
-import pandas as pd
-from airflow.hooks.base import BaseHook
 from airflow.models import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
-from sqlalchemy import create_engine
+
+from dwh.airflow.config import AppConfig
+from dwh.core.adapters.titanic_passenger_api_adapter import TitanicPassengerApiAdapter
+from dwh.core.domain.load_passengers_job import LoadPassengersJob
+from dwh.core.repository.titanic_passenger_repository import TitanicPassengerPsycopgRepository
 
 args = {
     "owner": "airflow",
@@ -20,12 +22,13 @@ args = {
 def download_titanic_dataset():
     logging.info("Downloading titanic dataset")
 
-    url = "https://web.stanford.edu/class/archive/cs/cs109/cs109.1166/stuff/titanic.csv"
-    conn = BaseHook.get_connection("POSTGRES_DB")
-    engine = create_engine(conn.get_uri())
+    adapter = TitanicPassengerApiAdapter(AppConfig.titanic_api_url())
 
-    df = pd.read_csv(url)
-    df.to_sql("titanic", engine, index=False, if_exists="replace", schema="public")
+    conn = AppConfig.titanic_raw_repository()
+    repository = TitanicPassengerPsycopgRepository(conn)
+
+    job = LoadPassengersJob(adapter, repository)
+    job.execute()
 
     logging.info("Downloaded titanic dataset")
 

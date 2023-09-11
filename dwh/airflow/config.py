@@ -25,3 +25,7 @@ class AppConfig:
     @staticmethod
     def titanic_raw_repository() -> PgConnect:
         return ConnectionBuilder.pg_conn(ConfigConst.TITANIC_RAW_REPOSITORY_CONN_ID)
+
+    @staticmethod
+    def titanic_api_url() -> str:
+        return "https://web.stanford.edu/class/archive/cs/cs109/cs109.1166/stuff/titanic.csv"
