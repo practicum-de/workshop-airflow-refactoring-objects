@@ -9,6 +9,10 @@ from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
 from sqlalchemy import create_engine
 
+from dwh.adapters.titanic_ds_adapter import TitanicDataSetAdapter
+from dwh.core.domain.passenger_save_job import PassengerSaveJob
+from dwh.core.repository.passender_repository import PassengerRepository
+
 args = {
     "owner": "airflow",
     "start_date": dt.datetime(2023, 9, 1),
@@ -24,8 +28,10 @@ def download_titanic_dataset():
     conn = BaseHook.get_connection("POSTGRES_DB")
     engine = create_engine(conn.get_uri())
 
-    df = pd.read_csv(url)
-    df.to_sql("titanic", engine, index=False, if_exists="replace", schema="public")
+    adapter = TitanicDataSetAdapter(url)
+    repository = PassengerRepository(db=engine)
+    job = PassengerSaveJob(adapter, repository)
+    job.execute()
 
     logging.info("Downloaded titanic dataset")
 
