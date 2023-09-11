@@ -65,6 +65,8 @@ titanic_sex_dm = PostgresOperator(
     task_id="create_titanic_sex_dm",
     postgres_conn_id="PG_CONN",
     sql="""
+            DROP TABLE IF EXISTS public.titanic_sex_dm;
+
             CREATE TABLE public.titanic_sex_dm AS
             SELECT
                 t."Sex"                     AS "sex",
