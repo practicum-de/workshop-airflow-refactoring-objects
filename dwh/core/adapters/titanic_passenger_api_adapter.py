@@ -2,26 +2,38 @@ import csv
 
 import requests
 
+from dwh.core.domain.load_passengers_job import ITitanicPassengerDataAdapter
+from dwh.core.entities.gender import Gender
 from dwh.core.entities.passenger import Passenger
 
 
-class TitanicApiAdapter:
+class TitanicPassengerApiAdapter(ITitanicPassengerDataAdapter):
     def __init__(self, url: str) -> None:
         self.url = url
 
     def download(self) -> list[Passenger]:
+        def resolve_gender(sex: str) -> Gender:
+            if sex == "male":
+                return Gender.MALE
+
+            if sex == "female":
+                return Gender.FEMALE
+
+            raise ValueError(f"sex {sex} is not recognized.")
+
         with requests.Session() as s:
-            download = s.get(self.url)
+            response = s.get(self.url)
 
-        decoded_content = download.content.decode("utf-8")
+        content = response.content.decode("utf-8")
 
-        passenger_reader = csv.DictReader(decoded_content.splitlines(), delimiter=",")
+        passenger_reader = csv.DictReader(content.splitlines(), delimiter=",")
+
         titanic_passengers = [
             Passenger(
                 survived=bool(p["Survived"]),
                 p_class=int(p["Pclass"]),
                 name=p["Name"],
-                sex=p["Sex"],
+                gender=resolve_gender(p["Sex"]),
                 age=float(p["Age"]),
                 siblings_spouses_aboard=int(p["Siblings/Spouses Aboard"]),
                 parents_children_aboard=int(p["Parents/Children Aboard"]),

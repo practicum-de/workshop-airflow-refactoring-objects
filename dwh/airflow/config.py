@@ -1,6 +1,6 @@
 from airflow.hooks.base import BaseHook
 
-from dwh.core.lib.postgres import PgConnect
+from dwh.utils.postgres import PgConnect
 
 
 class ConfigConst:

@@ -1,9 +1,10 @@
-from dwh.core.adapters.titanic_adapter import TitanicApiAdapter
+from dwh.core.adapters.titanic_passenger_api_adapter import TitanicPassengerApiAdapter
+from dwh.core.entities.gender import Gender
 
 
 class Test_TitanicApiAdapter:
     def test_download(self):
-        adapter = TitanicApiAdapter("https://web.stanford.edu/class/archive/cs/cs109/cs109.1166/stuff/titanic.csv")
+        adapter = TitanicPassengerApiAdapter("https://web.stanford.edu/class/archive/cs/cs109/cs109.1166/stuff/titanic.csv")
         data = adapter.download()
         assert data is not None
         assert len(data) == 887
@@ -13,7 +14,7 @@ class Test_TitanicApiAdapter:
         assert check_person.survived is True
         assert check_person.p_class == 2
         assert check_person.name == "Mr. Edward H Wheadon"
-        assert check_person.sex == "male"
+        assert check_person.gender == Gender.MALE
         assert check_person.age == 66.0
         assert check_person.fare == 10.5
         assert check_person.parents_children_aboard == 0
