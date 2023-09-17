@@ -10,6 +10,7 @@
     "python.testing.pytestEnabled": true,
     "cSpell.words": [
         "Braund",
+        "executemany",
         "Wheadon"
     ]
 }

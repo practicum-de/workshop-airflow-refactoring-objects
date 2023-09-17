@@ -9,7 +9,7 @@ from airflow.providers.postgres.operators.postgres import PostgresOperator
 from dwh.airflow.config import AppConfig
 from dwh.core.adapters.titanic_passenger_api_adapter import TitanicPassengerApiAdapter
 from dwh.core.domain.load_passengers_job import LoadPassengersJob
-from dwh.core.repository.titanic_passenger_repository import TitanicPassengerPsycopgRepository
+from dwh.core.repository.titanic_passenger_psycopg_repository import TitanicPassengerPsycopgRepository
 
 args = {
     "owner": "airflow",

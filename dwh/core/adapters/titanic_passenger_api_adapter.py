@@ -1,4 +1,5 @@
 import csv
+from typing import List
 
 import requests
 
@@ -11,7 +12,7 @@ class TitanicPassengerApiAdapter(ITitanicPassengerDataAdapter):
     def __init__(self, url: str) -> None:
         self.url = url
 
-    def download(self) -> list[Passenger]:
+    def download(self) -> List[Passenger]:
         def resolve_gender(sex: str) -> Gender:
             if sex == "male":
                 return Gender.MALE

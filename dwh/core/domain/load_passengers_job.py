@@ -1,22 +1,23 @@
 from abc import ABC, abstractmethod
+from typing import List
 
 from dwh.core.entities.passenger import Passenger
 
 
 class ITitanicPassengerDataAdapter(ABC):
     @abstractmethod
-    def download(self) -> list[Passenger]:
-        raise NotImplementedError
+    def download(self) -> List[Passenger]:
+        raise NotImplementedError()
 
 
 class ITitanicPassengerRepository(ABC):
     @abstractmethod
     def save(self, passenger: Passenger):
-        raise NotImplementedError
+        raise NotImplementedError()
 
     @abstractmethod
-    def save_many(self, passengers: list[Passenger]):
-        raise NotImplementedError
+    def save_many(self, passengers: List[Passenger]):
+        raise NotImplementedError()
 
 
 class LoadPassengersJob:
