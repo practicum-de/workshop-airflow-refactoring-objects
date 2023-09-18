@@ -1,9 +1,7 @@
 import datetime as dt
 import logging
 
-from airflow.models import DAG
-from airflow.operators.bash import BashOperator
-from airflow.operators.python import PythonOperator
+from airflow.decorators import dag, task
 
 from dwh.airflow.config import AppConfig
 from dwh.core.adapters.titanic_passenger_api_adapter import TitanicPassengerApiAdapter
@@ -18,21 +16,7 @@ args = {
 }
 
 
-def download_titanic_dataset():
-    logging.info("Downloading titanic dataset")
-
-    adapter = TitanicPassengerApiAdapter(AppConfig.titanic_api_url())
-
-    repository = TitanicPassengerClickhouseRepository()
-
-    job = LoadPassengersJob(adapter, repository)
-    job.execute()
-
-    logging.info("Downloaded titanic dataset")
-
-
-dag = DAG(
-    dag_id="titanic_load_clickhouse_dag",
+@dag(
     schedule_interval="0/15 * * * *",
     start_date=dt.datetime(2023, 9, 1),
     catchup=False,
@@ -40,19 +24,25 @@ dag = DAG(
     is_paused_upon_creation=False,
     default_args=args,
 )
+def titanic_load_clickhouse_dag():
+    adapter = TitanicPassengerApiAdapter(AppConfig.titanic_api_url())
+
+    repository = TitanicPassengerClickhouseRepository()
+
+    @task()
+    def start():
+        logging.info("Here we start!")
+
+    @task()
+    def download_titanic_dataset():
+        logging.info("Downloading titanic dataset")
+
+        job = LoadPassengersJob(adapter, repository)
+        job.execute()
+
+        logging.info("Downloaded titanic dataset")
+
+    start() >> download_titanic_dataset()  # type: ignore
 
 
-start = BashOperator(
-    task_id="start",
-    bash_command='echo "Here we start! "',
-    dag=dag,
-)
-
-create_titanic_dataset = PythonOperator(
-    task_id="download_titanic_dataset",
-    python_callable=download_titanic_dataset,
-    dag=dag,
-)
-
-
-start >> create_titanic_dataset
+titanic_load_clickhouse = titanic_load_clickhouse_dag()
