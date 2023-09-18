@@ -72,5 +72,5 @@ class TitanicPassengerPsycopgRepository(ITitanicPassengerRepository):
                     ON CONFLICT (name) DO NOTHING;
 
                 """,
-                    [p.dict() for p in passengers],
+                    [p.model_dump() for p in passengers],
                 )
