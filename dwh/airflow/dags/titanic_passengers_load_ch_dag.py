@@ -25,16 +25,15 @@ args = {
     default_args=args,
 )
 def titanic_load_clickhouse_dag():
-    adapter = TitanicPassengerApiAdapter(AppConfig.titanic_api_url())
-
-    repository = TitanicPassengerClickhouseRepository()
-
     @task()
     def start():
         logging.info("Here we start!")
 
     @task()
     def download_titanic_dataset():
+        adapter = TitanicPassengerApiAdapter(AppConfig.titanic_api_url())
+        repository = TitanicPassengerClickhouseRepository(AppConfig.titanic_ch_repository())
+
         logging.info("Downloading titanic dataset")
 
         job = LoadPassengersJob(adapter, repository)

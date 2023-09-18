@@ -4,6 +4,15 @@ from typing import Generator, Optional
 import psycopg
 
 
+class ChConnect:
+    def __init__(self, host: str, port: str, db_name: str, user: str, pw: str) -> None:
+        self.host = host
+        self.port = int(port)
+        self.db_name = db_name
+        self.user = user
+        self.pw = pw
+
+
 class PgConnect:
     def __init__(self, host: str, port: str, db_name: str, user: str, pw: str, sslmode: Optional[str] = None) -> None:
         self.host = host

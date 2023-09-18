@@ -7,6 +7,7 @@ from sqlalchemy import Boolean, Column, DateTime, Integer, Numeric, String
 from dwh.core.domain.load_passengers_job import ITitanicPassengerRepository
 from dwh.core.entities.passenger import Passenger
 from dwh.core.repository.entity_base import EntityBase
+from dwh.utils.postgres import ChConnect
 
 
 class PassengerEntity(EntityBase):
@@ -56,13 +57,27 @@ def to_entity(passenger: Passenger) -> List[Any]:
 
 
 class TitanicPassengerClickhouseRepository(ITitanicPassengerRepository):
-    def __init__(self) -> None:
+    def __init__(self, ch: ChConnect) -> None:
         self.client = clickhouse_connect.get_client(
-            host="host.docker.internal", port=8123, username="default", database="de", password=""
+            host=ch.host, port=ch.port, username=ch.user, database=ch.db_name, password=ch.pw
         )
 
     def save(self, passenger: Passenger):
-        pass
+        passengers_ch = [to_entity(passenger)]
+        self.client.insert(
+            "de.passengers",
+            passengers_ch,
+            column_names=[
+                "age",
+                "fare",
+                "name",
+                "p_class",
+                "parents_children_aboard",
+                "gender",
+                "siblings_spouses_aboard",
+                "survived",
+            ],
+        )
 
     def save_many(self, passengers: List[Passenger]):
         passengers_ch = [to_entity(p) for p in passengers]
