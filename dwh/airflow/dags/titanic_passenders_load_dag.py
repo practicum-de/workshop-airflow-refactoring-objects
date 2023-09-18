@@ -1,17 +1,15 @@
 import datetime as dt
 import logging
 
-import pandas as pd
-from airflow.hooks.base import BaseHook
 from airflow.models import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.operators.postgres import PostgresOperator
-from sqlalchemy import create_engine
 
-from dwh.adapters.titanic_ds_adapter import TitanicDataSetAdapter
-from dwh.core.domain.passenger_save_job import PassengerSaveJob
-from dwh.core.repository.passender_repository import PassengerRepository
+from dwh.airflow.config import AppConfig
+from dwh.core.adapters.titanic_passenger_api_adapter import TitanicPassengerApiAdapter
+from dwh.core.domain.load_passengers_job import LoadPassengersJob
+from dwh.core.repository.titanic_passenger_psycopg_repository import TitanicPassengerPsycopgRepository
 
 args = {
     "owner": "airflow",
@@ -24,20 +22,19 @@ args = {
 def download_titanic_dataset():
     logging.info("Downloading titanic dataset")
 
-    url = "https://web.stanford.edu/class/archive/cs/cs109/cs109.1166/stuff/titanic.csv"
-    conn = BaseHook.get_connection("POSTGRES_DB")
-    engine = create_engine(conn.get_uri())
+    adapter = TitanicPassengerApiAdapter(AppConfig.titanic_api_url())
 
-    adapter = TitanicDataSetAdapter(url)
-    repository = PassengerRepository(db=engine)
-    job = PassengerSaveJob(adapter, repository)
+    conn = AppConfig.titanic_raw_repository()
+    repository = TitanicPassengerPsycopgRepository(conn)
+
+    job = LoadPassengersJob(adapter, repository)
     job.execute()
 
     logging.info("Downloaded titanic dataset")
 
 
 dag = DAG(
-    dag_id="titanic_dag",
+    dag_id="titanic_load_psycopg_dag",
     schedule_interval="0/15 * * * *",
     start_date=dt.datetime(2023, 9, 1),
     catchup=False,

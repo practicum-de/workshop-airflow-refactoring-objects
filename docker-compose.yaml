@@ -75,12 +75,14 @@ x-airflow-common:
     _PIP_ADDITIONAL_REQUIREMENTS: ${_PIP_ADDITIONAL_REQUIREMENTS:-}
 
     AIRFLOW_CONN_POSTGRES_DB: ${AIRFLOW_CONN_POSTGRES_DB}
+    AIRFLOW_CONN_TITANIC_RAW_REPOSITORY_PG: ${AIRFLOW_CONN_TITANIC_RAW_REPOSITORY_PG}
+    AIRFLOW_CONN_TITANIC_RAW_REPOSITORY_CH: ${AIRFLOW_CONN_TITANIC_RAW_REPOSITORY_CH}
   volumes:
-    - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
+    - ./dwh:/opt/airflow/dags/dwh
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
-    - ${AIRFLOW_PROJ_DIR:-.}/requirements.txt:/opt/airflow/requirements.txt
+    - ./requirements.txt:/opt/airflow/requirements.txt
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on:
     &airflow-common-depends-on
@@ -301,6 +303,21 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+
+  clickhouse:
+    image: clickhouse/clickhouse-server
+    user: "101:101"
+    container_name: clickhouse
+    hostname: clickhouse
+    volumes:
+      - ${CLICKHOUSE_VOLUME_PATH:-./.fs/volumes/clickhouse}/etc/clickhouse-server/config.d/config.xml:/etc/clickhouse-server/config.d/config.xml
+      - ${CLICKHOUSE_VOLUME_PATH:-./.fs/volumes/clickhouse}/users.d/users.xml:/etc/clickhouse-server/users.d/users.xml
+      - ${CLICKHOUSE_VOLUME_PATH:-./.fs/volumes/clickhouse}/data:/var/lib/clickhouse clickhouse/clickhouse-server
+    ports:
+      - "127.0.0.1:8123:8123"
+      - "127.0.0.1:9000:9000"
+    restart: always
+
 
 volumes:
   postgres-db-volume:
