@@ -1,11 +1,11 @@
 from contextlib import contextmanager
-from typing import Generator
+from typing import Generator, Optional
 
 import psycopg
 
 
 class PgConnect:
-    def __init__(self, host: str, port: str, db_name: str, user: str, pw: str, sslmode: str = "require") -> None:
+    def __init__(self, host: str, port: str, db_name: str, user: str, pw: str, sslmode: Optional[str] = None) -> None:
         self.host = host
         self.port = int(port)
         self.db_name = db_name
@@ -14,6 +14,8 @@ class PgConnect:
         self.sslmode = sslmode
 
     def url(self) -> str:
+        ssl = f"sslmode={self.sslmode}" if self.sslmode else ""
+
         return """
             host={host}
             port={port}
@@ -21,10 +23,24 @@ class PgConnect:
             user={user}
             password={pw}
             target_session_attrs=read-write
-            sslmode={sslmode}
+            {ssl}
         """.format(
-            host=self.host, port=self.port, db_name=self.db_name, user=self.user, pw=self.pw, sslmode=self.sslmode
+            host=self.host, port=self.port, db_name=self.db_name, user=self.user, pw=self.pw, ssl=ssl
         )
+
+    def sqlalchemy_url(self) -> str:
+        engine = "postgresql+psycopg2"
+
+        conn_str = "{engine}://{login}:{password}@{host}:{port}/{schema}".format(
+            engine=engine,
+            login=self.user,
+            password=self.pw,
+            host=self.host,
+            port=self.port,
+            schema=self.db_name,
+        )
+
+        return conn_str
 
     @contextmanager
     def connection(self) -> Generator[psycopg.Connection, None, None]:

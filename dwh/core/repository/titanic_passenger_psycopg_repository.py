@@ -14,7 +14,7 @@ class TitanicPassengerPsycopgRepository(ITitanicPassengerRepository):
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    INSERT INTO stg.passengers (
+                    INSERT INTO public.passengers_psycopg (
                         age,
                         fare,
                         name,
@@ -22,7 +22,8 @@ class TitanicPassengerPsycopgRepository(ITitanicPassengerRepository):
                         parents_children_aboard,
                         gender,
                         siblings_spouses_aboard,
-                        survived
+                        survived,
+                        update_ts
                     )
                     VALUES (
                         %(age)s,
@@ -32,7 +33,8 @@ class TitanicPassengerPsycopgRepository(ITitanicPassengerRepository):
                         %(parents_children_aboard)s,
                         %(gender)s,
                         %(siblings_spouses_aboard)s,
-                        %(survived)s
+                        %(survived)s,
+                        NOW()
                     )
                     ON CONFLICT (name) DO NOTHING;
 
@@ -45,7 +47,7 @@ class TitanicPassengerPsycopgRepository(ITitanicPassengerRepository):
             with conn.cursor() as cur:
                 cur.executemany(
                     """
-                    INSERT INTO stg.passengers (
+                    INSERT INTO public.passengers_psycopg (
                         age,
                         fare,
                         name,
@@ -53,7 +55,8 @@ class TitanicPassengerPsycopgRepository(ITitanicPassengerRepository):
                         parents_children_aboard,
                         gender,
                         siblings_spouses_aboard,
-                        survived
+                        survived,
+                        update_ts
                     )
                     VALUES (
                         %(age)s,
@@ -63,7 +66,8 @@ class TitanicPassengerPsycopgRepository(ITitanicPassengerRepository):
                         %(parents_children_aboard)s,
                         %(gender)s,
                         %(siblings_spouses_aboard)s,
-                        %(survived)s
+                        %(survived)s,
+                        NOW()
                     )
                     ON CONFLICT (name) DO NOTHING;
 

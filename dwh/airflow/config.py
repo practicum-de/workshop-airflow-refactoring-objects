@@ -4,7 +4,7 @@ from dwh.utils.postgres import PgConnect
 
 
 class ConfigConst:
-    TITANIC_RAW_REPOSITORY_CONN_ID = "TITANIC_RAW_REPOSITORY_CONN_ID"
+    TITANIC_RAW_REPOSITORY_CONN_ID = "PG_CONN"
 
 
 class ConnectionBuilder:
@@ -12,7 +12,7 @@ class ConnectionBuilder:
     def pg_conn(conn_id: str) -> PgConnect:
         conn = BaseHook.get_connection(conn_id)
 
-        sslmode = "require"
+        sslmode = "disable"
         if "sslmode" in conn.extra_dejson:
             sslmode = conn.extra_dejson["sslmode"]
 

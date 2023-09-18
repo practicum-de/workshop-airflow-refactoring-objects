@@ -4,12 +4,12 @@ import logging
 from airflow.models import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.python import PythonOperator
-from airflow.providers.postgres.operators.postgres import PostgresOperator
 
 from dwh.airflow.config import AppConfig
 from dwh.core.adapters.titanic_passenger_api_adapter import TitanicPassengerApiAdapter
 from dwh.core.domain.load_passengers_job import LoadPassengersJob
-from dwh.core.repository.titanic_passenger_psycopg_repository import TitanicPassengerPsycopgRepository
+from dwh.core.repository.titanic_passenger_sqlalchemy_repository import TitanicPassengerAlchemyRepository
+from dwh.utils.session_builder import SessionBuilder
 
 args = {
     "owner": "airflow",
@@ -25,7 +25,8 @@ def download_titanic_dataset():
     adapter = TitanicPassengerApiAdapter(AppConfig.titanic_api_url())
 
     conn = AppConfig.titanic_raw_repository()
-    repository = TitanicPassengerPsycopgRepository(conn)
+    sb = SessionBuilder(conn)
+    repository = TitanicPassengerAlchemyRepository(sb)
 
     job = LoadPassengersJob(adapter, repository)
     job.execute()
@@ -34,7 +35,7 @@ def download_titanic_dataset():
 
 
 dag = DAG(
-    dag_id="titanic_load_psycopg_dag",
+    dag_id="titanic_load_alchemy_dag",
     schedule_interval="0/15 * * * *",
     start_date=dt.datetime(2023, 9, 1),
     catchup=False,
@@ -56,22 +57,5 @@ create_titanic_dataset = PythonOperator(
     dag=dag,
 )
 
-titanic_sex_dm = PostgresOperator(
-    task_id="create_titanic_sex_dm",
-    postgres_conn_id="PG_CONN",
-    sql="""
-            DROP TABLE IF EXISTS public.titanic_sex_dm;
 
-            CREATE TABLE public.titanic_sex_dm AS
-            SELECT
-                t."Sex"                     AS "sex",
-                count(DISTINCT t."Name")    AS name_uq,
-                avg("Age")                  AS age_avg,
-                sum("Fare")                 AS fare_sum
-            FROM public.titanic t
-            GROUP BY t."Sex"
-          """,
-)
-
-
-start >> create_titanic_dataset >> titanic_sex_dm
+start >> create_titanic_dataset
